@@ -155,6 +155,10 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
     if ([[self.options objectForKey:@"mediaType"] isEqualToString:@"video"]
         || [[self.options objectForKey:@"mediaType"] isEqualToString:@"mixed"]) {
 
+        if (@available(iOS 11.0, *)) {
+            self.picker.videoExportPreset = AVAssetExportPresetPassthrough;
+        }
+
         if ([[self.options objectForKey:@"videoQuality"] isEqualToString:@"high"]) {
             self.picker.videoQuality = UIImagePickerControllerQualityTypeHigh;
         }
