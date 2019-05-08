@@ -107,6 +107,8 @@ public class MediaUtils
 
             if (photo == null)
             {
+                // Fixes: java.lang.NullPointerException: Attempt to read from field 'java.io.File com.imagepicker.a.a.b' on a null object reference
+                // This can happen when the android library allows the user to select a video whilst photos were forced.
                 return imageConfig;
             }
 
