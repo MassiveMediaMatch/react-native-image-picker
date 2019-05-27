@@ -509,7 +509,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
   {
     if (this.callback != null) {
       responseHelper.invokeCustomButton(this.callback, action);
-      this.callback = null
+      this.callback = null;
     }
   }
 
