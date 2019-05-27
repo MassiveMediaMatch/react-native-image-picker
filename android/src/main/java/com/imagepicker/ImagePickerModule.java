@@ -96,25 +96,26 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
         permissionsGranted = permissionsGranted && granted;
       }
 
-      if (callback == null || options == null)
+      if (ImagePickerModule.this.callback == null || options == null)
       {
         return false;
       }
 
       if (!permissionsGranted)
       {
-        responseHelper.invokeError(callback, "Permissions weren't granted");
+        responseHelper.invokeError(ImagePickerModule.this.callback, "Permissions weren't granted");
+        ImagePickerModule.this.callback = null;
         return false;
       }
 
       switch (requestCode)
       {
         case REQUEST_PERMISSIONS_FOR_CAMERA:
-          launchCamera(options, callback);
+          launchCamera(options, ImagePickerModule.this.callback);
           break;
 
         case REQUEST_PERMISSIONS_FOR_LIBRARY:
-          launchImageLibrary(options, callback);
+          launchImageLibrary(options, ImagePickerModule.this.callback);
           break;
 
       }
@@ -199,9 +200,9 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
 
   public void doOnCancel()
   {
-    if (callback != null) {
-      responseHelper.invokeCancel(callback);
-      callback = null;
+    if (this.callback != null) {
+      responseHelper.invokeCancel(this.callback);
+      this.callback = null;
     }
   }
 
@@ -230,7 +231,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     this.callback = callback;
     this.options = options;
 
-    if (!permissionsCheck(currentActivity, callback, REQUEST_PERMISSIONS_FOR_CAMERA))
+    if (!permissionsCheck(currentActivity, this.callback, REQUEST_PERMISSIONS_FOR_CAMERA))
     {
       return;
     }
@@ -261,12 +262,14 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
       if (imageConfig.original != null) {
         cameraCaptureURI = RealPathUtil.compatUriFromFile(reactContext, imageConfig.original);
       }else {
-        responseHelper.invokeError(callback, "Couldn't get file path for photo");
+        responseHelper.invokeError(this.callback, "Couldn't get file path for photo");
+        this.callback = null;
         return;
       }
       if (cameraCaptureURI == null)
       {
-        responseHelper.invokeError(callback, "Couldn't get file path for photo");
+        responseHelper.invokeError(this.callback, "Couldn't get file path for photo");
+        this.callback = null;
         return;
       }
       cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraCaptureURI);
@@ -274,7 +277,8 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
 
     if (cameraIntent.resolveActivity(reactContext.getPackageManager()) == null)
     {
-      responseHelper.invokeError(callback, "Cannot launch camera");
+      responseHelper.invokeError(this.callback, "Cannot launch camera");
+      this.callback = null;
       return;
     }
 
@@ -296,7 +300,8 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     catch (ActivityNotFoundException e)
     {
       e.printStackTrace();
-      responseHelper.invokeError(callback, "Cannot launch camera");
+      responseHelper.invokeError(this.callback, "Cannot launch camera");
+      this.callback = null;
     }
   }
 
@@ -317,7 +322,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     this.callback = callback;
     this.options = options;
 
-    if (!permissionsCheck(currentActivity, callback, REQUEST_PERMISSIONS_FOR_LIBRARY))
+    if (!permissionsCheck(currentActivity, this.callback, REQUEST_PERMISSIONS_FOR_LIBRARY))
     {
       return;
     }
@@ -341,7 +346,8 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
 
     if (libraryIntent.resolveActivity(reactContext.getPackageManager()) == null)
     {
-      responseHelper.invokeError(callback, "Cannot launch photo library");
+      responseHelper.invokeError(this.callback, "Cannot launch photo library");
+      this.callback = null;
       return;
     }
 
@@ -352,7 +358,8 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     catch (ActivityNotFoundException e)
     {
       e.printStackTrace();
-      responseHelper.invokeError(callback, "Cannot launch photo library");
+      responseHelper.invokeError(this.callback, "Cannot launch photo library");
+      this.callback = null;
     }
   }
 
@@ -370,9 +377,9 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     if (resultCode != Activity.RESULT_OK)
     {
       removeUselessFiles(requestCode, imageConfig);
-      if (callback != null) {
-        responseHelper.invokeCancel(callback);
-        callback = null;
+      if (this.callback != null) {
+        responseHelper.invokeCancel(this.callback);
+        this.callback = null;
       }
       return;
     }
@@ -402,8 +409,8 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
             // image not in cache
             responseHelper.putString("error", "Could not read photo");
             responseHelper.putString("uri", uri.toString());
-            responseHelper.invokeResponse(callback);
-            callback = null;
+            responseHelper.invokeResponse(this.callback);
+            this.callback = null;
             return;
           }
         }
@@ -413,8 +420,8 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
       case REQUEST_LAUNCH_VIDEO_LIBRARY:
         responseHelper.putString("uri", data.getData().toString());
         responseHelper.putString("path", getRealPathFromURI(data.getData()));
-        responseHelper.invokeResponse(callback);
-        callback = null;
+        responseHelper.invokeResponse(this.callback);
+        this.callback = null;
         return;
 
       case REQUEST_LAUNCH_VIDEO_CAPTURE:
@@ -422,8 +429,8 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
         responseHelper.putString("uri", data.getData().toString());
         responseHelper.putString("path", path);
         fileScan(reactContext, path);
-        responseHelper.invokeResponse(callback);
-        callback = null;
+        responseHelper.invokeResponse(this.callback);
+        this.callback = null;
         return;
     }
 
@@ -432,8 +439,8 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     if (result.error != null)
     {
       removeUselessFiles(requestCode, imageConfig);
-      responseHelper.invokeError(callback, result.error.getMessage());
-      callback = null;
+      responseHelper.invokeError(this.callback, result.error.getMessage());
+      this.callback = null;
       return;
     }
 
@@ -493,14 +500,17 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
       }
     }
 
-    responseHelper.invokeResponse(callback);
-    callback = null;
+    responseHelper.invokeResponse(this.callback);
+    this.callback = null;
     this.options = null;
   }
 
   public void invokeCustomButton(@NonNull final String action)
   {
-    responseHelper.invokeCustomButton(this.callback, action);
+    if (this.callback != null) {
+      responseHelper.invokeCustomButton(this.callback, action);
+      this.callback = null
+    }
   }
 
   @Override
