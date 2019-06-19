@@ -60,7 +60,7 @@ public class MediaUtils
             path.mkdirs();
             result.createNewFile();
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             e.printStackTrace();
             result = null;
@@ -172,7 +172,7 @@ public class MediaUtils
             scaledPhoto.compress(Bitmap.CompressFormat.JPEG, result.quality, bytes);
 
             final boolean forceLocal = requestCode == REQUEST_LAUNCH_IMAGE_CAPTURE;
-            final File resized = createNewFile(context, options, !forceLocal);
+            final File resized = createNewFile(context, options, true);
 
             if (resized == null)
             {
