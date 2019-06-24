@@ -112,15 +112,7 @@ public class MediaUtils
                 return imageConfig;
             }
 
-            ImageConfig result = new ImageConfig(
-                    imageConfig.original,
-                    imageConfig.resized,
-                    imageConfig.maxWidth,
-                    imageConfig.maxHeight,
-                    imageConfig.quality,
-                    imageConfig.rotation,
-                    imageConfig.saveToCameraRoll
-            );
+            ImageConfig result = imageConfig;
 
             if (imageConfig.maxWidth == 0 || imageConfig.maxWidth > initialWidth)
             {
