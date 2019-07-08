@@ -418,8 +418,26 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
         break;
 
       case REQUEST_LAUNCH_VIDEO_LIBRARY:
-        responseHelper.putString("uri", data.getData().toString());
-        responseHelper.putString("path", getRealPathFromURI(data.getData()));
+        uri = data.getData();
+        String realVideoPath = getRealPathFromURI(uri);
+        final boolean isVideoUrl = !TextUtils.isEmpty(realVideoPath) &&
+                Patterns.WEB_URL.matcher(realVideoPath).matches();
+        if (realVideoPath == null || isVideoUrl) {
+          try
+          {
+            File file = createFileFromURI(uri);
+            realVideoPath = file.getAbsolutePath();
+            uri = Uri.fromFile(file);
+          }
+          catch (Exception e)
+          {
+            // video not in cache
+            responseHelper.putString("error", "Could not read video");
+          }
+        }
+
+        responseHelper.putString("uri", uri.toString());
+        responseHelper.putString("path", realVideoPath);
         responseHelper.invokeResponse(this.callback);
         this.callback = null;
         return;

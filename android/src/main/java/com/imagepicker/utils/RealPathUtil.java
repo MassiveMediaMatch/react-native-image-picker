@@ -93,8 +93,11 @@ public class RealPathUtil {
 		else if ("content".equalsIgnoreCase(uri.getScheme())) {
 
 			// Return the remote address
-			if (isGooglePhotosUri(uri))
+			if (isGoogleOldPhotosUri(uri))
 				return uri.getLastPathSegment();
+
+			if (isGoogleNewPhotosUri(uri))
+				return null;
 
 			if (isFileProviderUri(context, uri))
 				return getFileProviderPath(context, uri);
@@ -171,8 +174,16 @@ public class RealPathUtil {
 	 * @param uri The Uri to check.
 	 * @return Whether the Uri authority is Google Photos.
 	 */
-	public static boolean isGooglePhotosUri(@NonNull final Uri uri) {
+	public static boolean isGoogleOldPhotosUri(@NonNull final Uri uri) {
 		return "com.google.android.apps.photos.content".equals(uri.getAuthority());
+	}
+
+	/**
+	 * @param uri The Uri to check.
+	 * @return Whether the Uri authority is Google Photos.
+	 */
+	public static boolean isGoogleNewPhotosUri(@NonNull final Uri uri) {
+		return "com.google.android.apps.photos.contentprovider".equals(uri.getAuthority());
 	}
 
 	/**
