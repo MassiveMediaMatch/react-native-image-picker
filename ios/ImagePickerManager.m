@@ -25,13 +25,17 @@ RCT_EXPORT_MODULE();
 RCT_EXPORT_METHOD(launchCamera:(NSDictionary *)options callback:(RCTResponseSenderBlock)callback)
 {
     self.callback = callback;
-    [self launchImagePicker:RNImagePickerTargetCamera options:options];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self launchImagePicker:RNImagePickerTargetCamera options:options];
+    });
 }
 
 RCT_EXPORT_METHOD(launchImageLibrary:(NSDictionary *)options callback:(RCTResponseSenderBlock)callback)
 {
     self.callback = callback;
-    [self launchImagePicker:RNImagePickerTargetLibrarySingleImage options:options];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self launchImagePicker:RNImagePickerTargetLibrarySingleImage options:options];
+    });
 }
 
 RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseSenderBlock)callback)
@@ -208,18 +212,18 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
         }];
     }
     else { // RNImagePickerTargetLibrarySingleImage
-        if ([[[UIDevice currentDevice] systemVersion] floatValue] < 11) {
-            [self checkPhotosPermissions:^(BOOL granted) {
-                if (!granted) {
-                    self.callback(@[@{@"error": @"Photo library permissions not granted"}]);
-                    return;
-                }
+      if (@available(iOS 11.0, *)) {
+        showPickerViewController();
+      } else {
+        [self checkPhotosPermissions:^(BOOL granted) {
+          if (!granted) {
+            self.callback(@[@{@"error": @"Photo library permissions not granted"}]);
+            return;
+          }
 
-                showPickerViewController();
-            }];
-        } else {
           showPickerViewController();
-        }
+        }];
+      }
     }
 }
 
@@ -305,7 +309,13 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
             }
 
             if (imageURL) {
-                PHAsset *pickedAsset = [PHAsset fetchAssetsWithALAssetURLs:@[imageURL] options:nil].lastObject;
+                PHAsset *pickedAsset;
+                if (@available(iOS 11.0, *)) {
+                  pickedAsset = [info objectForKey: UIImagePickerControllerPHAsset];
+                } else {
+                  pickedAsset = [PHAsset fetchAssetsWithALAssetURLs:@[imageURL] options:nil].lastObject;
+                }
+                
                 NSString *originalFilename = [self originalFilenameForAsset:pickedAsset assetType:PHAssetResourceTypePhoto];
                 self.response[@"fileName"] = originalFilename ?: [NSNull null];
                 if (pickedAsset.location) {
@@ -470,7 +480,6 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
                   } else {
                     [fileManager copyItemAtURL:videoURL toURL:videoDestinationURL error:&error];
                   }
-
                   if (error) {
                       self.callback(@[@{@"error": error.localizedFailureReason}]);
                       return;

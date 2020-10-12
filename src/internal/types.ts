@@ -24,6 +24,7 @@ export interface ImagePickerResponse {
   latitude?: number;
   longitude?: number;
   timestamp?: string;
+  originalRotation?: number;
 }
 
 export interface ImagePickerCustomButtonOptions {
@@ -58,6 +59,7 @@ export interface ImagePickerStorageOptions {
   path?: string;
   cameraRoll?: boolean;
   waitUntilSaved?: boolean;
+  privateDirectory?: boolean;
 }
 
 export interface ImagePickerPermissionDeniedOptions {

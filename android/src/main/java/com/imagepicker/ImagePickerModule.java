@@ -76,6 +76,8 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
   private final int dialogThemeId;
 
   protected Callback callback;
+  private Callback permissionRequestCallback;
+
   private ReadableMap options;
   protected Uri cameraCaptureURI;
   private Boolean noData = false;
@@ -110,19 +112,18 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
 
       if (!permissionsGranted)
       {
-        responseHelper.invokeError(ImagePickerModule.this.callback, "Permissions weren't granted");
-        ImagePickerModule.this.callback = null;
+        responseHelper.invokeError(permissionRequestCallback, "Permissions weren't granted");
         return false;
       }
 
       switch (requestCode)
       {
         case REQUEST_PERMISSIONS_FOR_CAMERA:
-          launchCamera(options, ImagePickerModule.this.callback);
+          launchCamera(options, permissionRequestCallback);
           break;
 
         case REQUEST_PERMISSIONS_FOR_LIBRARY:
-          launchImageLibrary(options, ImagePickerModule.this.callback);
+          launchImageLibrary(options, permissionRequestCallback);
           break;
 
       }
@@ -227,6 +228,8 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
   @ReactMethod
   public void launchCamera(final ReadableMap options, final Callback callback)
   {
+    permissionRequestCallback = callback;
+
     if (!isCameraAvailable())
     {
       responseHelper.invokeError(callback, "Camera not available");
@@ -325,6 +328,8 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
   @ReactMethod
   public void launchImageLibrary(final ReadableMap options, final Callback callback)
   {
+    permissionRequestCallback = callback;
+
     final Activity currentActivity = getCurrentActivity();
     if (currentActivity == null) {
       responseHelper.invokeError(callback, "can't find current Activity");
@@ -602,10 +607,18 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     final int cameraPermission = ActivityCompat
             .checkSelfPermission(activity, Manifest.permission.CAMERA);
 
-    final boolean permissionsGrated = writePermission == PackageManager.PERMISSION_GRANTED &&
-            cameraPermission == PackageManager.PERMISSION_GRANTED;
+    boolean permissionsGranted = false;
 
-    if (!permissionsGrated)
+    switch (requestCode) {
+      case REQUEST_PERMISSIONS_FOR_LIBRARY:
+        permissionsGranted = writePermission == PackageManager.PERMISSION_GRANTED;
+        break;
+      case REQUEST_PERMISSIONS_FOR_CAMERA:
+        permissionsGranted = cameraPermission == PackageManager.PERMISSION_GRANTED && writePermission == PackageManager.PERMISSION_GRANTED;
+        break;
+    }
+
+    if (!permissionsGranted)
     {
       final Boolean dontAskAgain = ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE) && ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA);
 
@@ -653,7 +666,19 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
       }
       else
       {
-        String[] PERMISSIONS = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
+        String[] PERMISSIONS;
+        switch (requestCode) {
+          case REQUEST_PERMISSIONS_FOR_LIBRARY:
+            PERMISSIONS = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE};
+            break;
+          case REQUEST_PERMISSIONS_FOR_CAMERA:
+            PERMISSIONS = new String[]{Manifest.permission.CAMERA,Manifest.permission.WRITE_EXTERNAL_STORAGE};
+            break;
+          default:
+            PERMISSIONS = new String[]{};
+            break;
+        }
+
         if (activity instanceof ReactActivity)
         {
           ((ReactActivity) activity).requestPermissions(PERMISSIONS, requestCode, listener);
@@ -748,19 +773,25 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
   private void putExtraFileInfo(@NonNull final String path,
                                 @NonNull final ResponseHelper responseHelper)
   {
-    // size && filename
     try {
+      // size && filename
       File f = new File(path);
       responseHelper.putDouble("fileSize", f.length());
       responseHelper.putString("fileName", f.getName());
+      // type
+      String extension = MimeTypeMap.getFileExtensionFromUrl(path);
+      String fileName = f.getName();
+      if (extension != "") {
+        responseHelper.putString("type", MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension));
+      } else {
+        int i = fileName.lastIndexOf('.');
+        if (i > 0) {
+          extension = fileName.substring(i+1);
+          responseHelper.putString("type", MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension));
+        }
+      }
     } catch (Exception e) {
       e.printStackTrace();
-    }
-
-    // type
-    String extension = MimeTypeMap.getFileExtensionFromUrl(path);
-    if (extension != null) {
-      responseHelper.putString("type", MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension));
     }
   }
 
