@@ -101,7 +101,11 @@ public class RealPathUtil {
 			if (isFileProviderUri(context, uri))
 				return getFileProviderPath(context, uri);
 
-			return getDataColumn(context, uri, null, null);
+			try {
+				return getDataColumn(context, uri, null, null);
+			} catch (IllegalArgumentException e) {
+				return getFileProviderPath(context, uri);
+			}
 		}
 		// File
 		else if ("file".equalsIgnoreCase(uri.getScheme())) {
